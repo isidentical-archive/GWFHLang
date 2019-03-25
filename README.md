@@ -1,4 +1,5 @@
 # GWHF Lang
+[![asciicast](https://asciinema.org/a/Sbbuth7l25QfP5Ueaj5U7WfJE.svg)](https://asciinema.org/a/Sbbuth7l25QfP5Ueaj5U7WfJE)
 ## Install
 `pip install gwfhlang`, `python -m gwfhlang FILE`, `python -m gwfhlang FILE debug` 
 ## Usage

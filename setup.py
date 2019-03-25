@@ -8,7 +8,7 @@ with open(current_dir / 'README.md', encoding='utf-8') as f:
 
 setup(
     name="gwfhlang",
-    version="0.1.0",
+    version="0.1.1",
     packages=find_packages(),
     author="BTaskaya",
     author_email="batuhanosmantaskaya@gmail.com",
