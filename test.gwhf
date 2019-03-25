@@ -1,0 +1,11 @@
+name = "batuhan"
+born = 2003
+born_sister = 2008
+
+test = "Holla"
+if born <= born_sister:
+    olasilik = "imkansiz"
+    printf(olasilik)
+else:
+    olasilik = "yüzde yüz"
+    printf(olasilik)

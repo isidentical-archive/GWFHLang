@@ -1,0 +1,25 @@
+main: (_NEWLINE | stmt)*
+?stmt: expr | if_stmt 
+
+if_stmt: "if" comp ":" suite ["else" ":" suite]
+suite: _NEWLINE _INDENT expr+ _DEDENT
+
+?expr: (symset | comp | ccall) _NEWLINE
+symset: SYM "=" (INT | STR)
+comp: SYM op SYM
+ccall: SYM "(" SYM? ("," SYM)* ")"
+
+!op: "<" | ">" | "=" | ">=" | "<=" | "!="
+
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+%import common.INT
+%import common.ESCAPED_STRING -> STR
+%import common.CNAME -> SYM
+
+%ignore /[\t \f]+/
+%ignore /\\[\t \f]*\r?\n/
+%ignore COMMENT
+
+%declare _INDENT _DEDENT
