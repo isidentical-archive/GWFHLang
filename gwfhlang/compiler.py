@@ -82,9 +82,21 @@ class Compiler(Transformer):
                 *create_instr('jfe', 30),
                 *suite_else
             ]
-            return code
+        else:
+            comp, suite = tokens
+            loads = [*create_instr("load", 29, *arkhe_int(len(suite))),
+                     *create_instr("load", 30, *arkhe_int(0))]
             
+            code = [
+                *loads,
+                *comp,
+                *create_instr('jfe', 30), # No jump
+                *create_instr('jfn', 29), # Jump amount of suite
+                *suite,
+            ]
         
+        return code
+
     def suite(self, tokens):
         return list(chain.from_iterable(tokens))
     
