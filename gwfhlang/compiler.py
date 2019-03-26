@@ -20,10 +20,12 @@ def name(value):
 
 
 COMP_MAP = {"==": "eq", "!=": "ne", ">": "gt", "<": "lt", ">=": "ge", "<=": "le"}
+FACT_MAP = {"+": "add", "-": "sub", "*": "mul", "/": "truediv"}
 
 """
 Register Reserves;
 0, 1 => LOAD
+26 => RVM
 27, 28 => CCALL
 29, 30, 31 => IF
 
@@ -37,36 +39,31 @@ class Compiler(Transformer):
 
     def symset(self, tokens):
         sym, val = tokens
-        ops = self.load_value(val)
+        pre, ops = self.load_value(val)
 
         loads = [
+            *pre,
             *create_instr("load", 0, *name(sym), TypeTable.STR.value),
             *create_instr("load", 1, *ops),
         ]
-
+        
         return [*loads, *create_instr("symset", 0, 1)]
 
     def comp(self, tokens):
-        comp = COMP_MAP.get(tokens.pop(1).children[0].value, "eq")
-        
-        inst = []
-        regs = []
-        for operand in tokens:
-            if operand.type == 'SYM':
-                read, reg = self.symread(str(operand))
-                inst.extend(read)
-                regs.extend(reg)
-            elif operand.type == 'STR' or operand.type == 'INT':
-                read, reg = self.load_value(operand), max(regs, default=0) + 1
-                inst.extend(create_instr("load", reg, *read))
-                regs.append(reg) 
-        
-        return [*inst, *create_instr(comp, *regs)]
+        comp = COMP_MAP.get(tokens.pop(1).children[0].value)
+        inst, regs = self.tbb(tokens)
+        return 0, [*inst, *create_instr(comp, *regs)]
 
-    def symread(self, *syms):
+    def arith(self, tokens):
+        fact = FACT_MAP.get(tokens.pop(1).children[0].value)
+        inst, regs = self.tbb(tokens)
+        return 26, [*inst, *create_instr(fact, *regs, 26)]
+        
+    def symread(self, *syms, **kwargs):
+        start = kwargs.pop('start', 0)
         loads = [
             create_instr("load", n, *name(item), TypeTable.STR.value)
-            for n, item in enumerate(syms)
+            for n, item in enumerate(syms, start)
         ]
         symreads = [create_instr("symread", n, n) for n in range(len(syms))]
         return list(chain.from_iterable([*loads, *symreads])), list(range(len(syms)))
@@ -112,17 +109,26 @@ class Compiler(Transformer):
         return list(chain.from_iterable(tokens))
 
     def load_value(self, val):
-        value = literal_eval(val)
-        if val.type == "INT":
-            ops = arkhe_int(value)
-        elif val.type == "STR":
-            ops = list(map(ord, value))
-            ops.append(TypeTable.STR.value)
-        elif val.type == "BYT":
-            ops = list(map(ord, value.decode("utf8")))
-            ops.append(TypeTable.BYT.value)
-        
-        return ops
+        if isinstance(val, list):
+            t, pre = val
+            if t:
+                ops = [t, TypeTable.REG.value]
+            else:
+                ops = []
+                
+        else:    
+            value = literal_eval(val)
+            pre = []
+            if val.type == "INT":
+                ops = arkhe_int(value)
+            elif val.type == "STR":
+                ops = list(map(ord, value))
+                ops.append(TypeTable.STR.value)
+            elif val.type == "BYT":
+                ops = list(map(ord, value.decode("utf8")))
+                ops.append(TypeTable.BYT.value)
+            
+        return pre, ops
         
     def ccall(self, tokens):
         func, *args = tokens
@@ -133,3 +139,19 @@ class Compiler(Transformer):
             *create_instr("load", 27, *name(str(func)), TypeTable.STR.value),
             *create_instr("ccall", 27, *args_regs, 28),
         ]
+    
+    def tbb(self, tokens):
+        inst = []
+        regs = []
+        for operand in tokens:
+            next_free_reg = max(regs, default=-1) + 1
+            if operand.type == 'SYM':
+                read, reg = self.symread(str(operand), start=next_free_reg)
+                inst.extend(read)
+                regs.extend(reg)
+            elif operand.type == 'STR' or operand.type == 'INT':
+                _, read = self.load_value(operand)
+                inst.extend(create_instr("load", next_free_reg, *read))
+                regs.append(next_free_reg)
+                
+        return inst, regs
