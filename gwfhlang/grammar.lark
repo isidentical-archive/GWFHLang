@@ -5,11 +5,17 @@ if_stmt: "if" comp ":" suite ["else" ":" suite]
 suite: _NEWLINE _INDENT expr+ _DEDENT
 
 ?expr: (symset | comp | ccall) _NEWLINE
-symset: SYM "=" (INT | STR)
-comp: SYM op SYM
-ccall: SYM "(" SYM? ("," SYM)* ")"
+
+symset: SYM "=" (INT | STR | arith)
+comp: (INT | STR | SYM) op (INT | STR | SYM)
+arith: (INT | STR | SYM) fact (INT | STR | SYM)
+
+call: SYM "(" SYM? ("," SYM)* ")"
+ccall: "!" SYM "(" SYM? ("," SYM)* ")"
+
 
 !op: "<" | ">" | "=" | ">=" | "<=" | "!="
+!fact: "+" | "-" | "*" | "/"
 
 COMMENT: /#[^\n]*/
 _NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
